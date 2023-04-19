@@ -1,0 +1,184 @@
+# Import packages
+import numpy as np
+import pandas as pd
+import seaborn as sns
+
+import matplotlib.pyplot as plt
+%matplotlib inline
+
+import warnings
+warnings.filterwarnings('ignore')
+
+# Load the dataset and view top 5 entries
+
+ipl = pd.read_csv("C:/Users/Siya/Documents/Data Science/Projects/Python/IPL 2022/IPL 2022.csv")
+
+# Select numeric columns
+
+ipl_numeric = ipl.select_dtypes(include=[np.number])
+numeric_cols = ipl_numeric.columns.values
+print(numeric_cols)
+
+# Select non-numeric columns
+
+ipl_non_numeric = ipl.select_dtypes(exclude=[np.number])
+non_numeric_cols = ipl_non_numeric.columns.values
+print(non_numeric_cols)
+
+# Check for null values
+
+for col in ipl.columns:
+    pct_missing = np.mean(ipl[col].isnull())
+    print('{} - {}%'.format(col, round(pct_missing*100)))
+    
+######  From the above output, we see that the column  'player_of_the_match' has missing values which account for 2%. 
+######  So, we check to see which matches don't have player of the match entries so that we can search for them online.
+
+# Create a function to select rows with null values.
+
+def nans(df):
+    return df[df.isnull().any(axis = 1)]
+
+nans(ipl)
+
+###### Google search revealed that the player of the match in the match with match_id 46 was Ruturaj Gaikwad.
+
+# Update the dataframe to include Ruturaj Gaikwad as player of the match for the 46th match.
+
+ipl['player_of_the_match'].fillna('Ruturaj Gaikwad', inplace = True)
+
+# Confirm update successful.
+
+nans(ipl)
+
+# Check for outliers by looking at the max and min values for the numeric features.
+
+ipl.describe()
+
+# Exploratory data analysis
+
+# How many matches did each team win?
+
+sns.set_style('darkgrid')
+match_winner_data = ipl["match_winner"].value_counts().sort_values(ascending = False)
+plt.figure(figsize = (15,8))
+temp = sns.barplot(match_winner_data.index, match_winner_data.values, alpha = 0.8)
+plt.title('Match winners in the IPL 2022')
+plt.ylabel('Count', fontsize = 14)
+plt.xlabel('Team name', fontsize = 15)
+temp.set_xticklabels(rotation = 90, labels = match_winner_data.index, fontsize = 10)
+plt.show()
+
+
+###### At the time of this data was collected, Gujrat was leading with eight wins. 
+
+
+# What are the chances of winning based on the toss decision?
+
+# Define data
+data = ipl['won_by'].value_counts()
+labels =  {'Chasing': 'Chasing', 'Batting': 'Defending'}
+
+# Define figure size
+sns.set(rc={"figure.figsize":(15, 8)})
+
+# Define font size
+sns.set(font_scale=2)
+
+# Define Seaborn color palette
+colors = sns.color_palette('bright')[0:5]
+
+# Create pie chart
+plt.pie(data, labels = labels, colors = colors, autopct='%.0f%%',)
+plt.title('Chance of winning based on toss decision')
+plt.show()
+
+###### From the plot above we see that more than 50% of the matches were won by teams that chose to chase, i.e., field first. 
+###### This shows that all things being equal, a team has a 52.2% chance of winning if they elect to field first. 
+######  Might this result from the team having a clear set goal that they must achieve when their turn to bat comes about?
+
+# Do most teams prefer batting or chasing after winning the tosss?
+
+# Define data
+data = ipl['toss_decision'].value_counts()
+labels = ipl['toss_decision'].unique()
+
+# Define figure size
+sns.set(rc={"figure.figsize":(15, 8)})
+
+# Define font size
+sns.set(font_scale=2)
+
+# Define Seaborn color palette to use
+colors = sns.color_palette('bright')[0:5]
+
+# Create pie chart
+plt.pie(data, labels = labels, colors = colors, autopct='%.0f%%',)
+plt.title('Bat/Chase Preference After Toss Win')
+plt.show()
+
+###### The plot shows that 93% of captains chose to field first after winning the toss. These captains made well informed 
+###### choices given the outcomes of the 'Number of matches won by chasing or defending' chart. 
+
+# In how many matches were the top scorers declared top scorers?
+
+sns.set_style('darkgrid')
+top_scorer_data = ipl['top_scorer'].value_counts().sort_values(ascending = False)
+plt.figure(figsize = (15,8))
+temp = sns.barplot(top_scorer_data.index, top_scorer_data.values, alpha = 0.8)
+plt.title('Top scorers in the IPL 2022')
+plt.ylabel('Count', fontsize = 14)
+plt.xlabel('Player name', fontsize = 15)
+temp.set_xticklabels(rotation = 90, labels = top_scorer_data.index, fontsize = 10)
+plt.show()
+
+
+###### The plot shows that Jos Butler haas been a top scorer in the most number of games in the dataset, amounting to five ocassions. 
+###### The player with the second highest number of top scorer accolades is KL Rahul. 
+
+# Analysing the top_scorer data further for more insights
+
+# How many runs did the top scorers score?
+
+sns.set_style('darkgrid')
+highscore_data = ipl['highscore']
+plt.figure(figsize = (15,8))
+temp = sns.barplot(highscore_data.index, highscore_data.values, alpha = 0.8)
+plt.title('Top scorers runs IPL 2022')
+plt.ylabel('Highscore', fontsize = 14)
+plt.xlabel('Top Scorer', fontsize = 15)
+temp.set_xticklabels(rotation = 90, labels = ipl['top_scorer'], fontsize = 10)
+plt.show()
+
+######  From this plot we can see that runs of more 100 have been achieved 5 times with Jos Butler accounting for three of these occasions. 
+
+# Which player was awarded player of the match the most?
+
+sns.set_style('darkgrid')
+player_of_match_data = ipl['player_of_the_match'].value_counts().sort_values(ascending = False)
+plt.figure(figsize = (15,8))
+temp = sns.barplot(player_of_match_data.index, player_of_match_data.values, alpha = 0.8)
+plt.title('Most Player of the Match Awards')
+plt.ylabel('Count', fontsize = 14)
+plt.xlabel('player_of_the_match', fontsize = 15)
+temp.set_xticklabels(rotation = 90, labels = player_of_match_data.index, fontsize = 10)
+plt.show()
+
+
+###### The plot shows that Kuldeep Yadav has been awarded player of the match a total of 4 times. Interestingly, 
+###### though he has the highest number of centuries and the highest score, Jos Butler has only been awarded player of the match twice in the dataset. 
+###### This goes to show that the awarding of player of the match is not just based on the number of runs a player scores. 
+
+# Which bowler has the best bowling figures?
+
+sns.set_style('darkgrid')
+best_bowling_data = ipl['best_bowling'].value_counts().sort_values(ascending = False)
+plt.figure(figsize = (15,8))
+temp = sns.barplot(best_bowling_data.index, best_bowling_data.values, alpha = 0.8)
+plt.title('Most Best Bowler Awards')
+plt.ylabel('Count', fontsize = 14)
+plt.xlabel('Player of the match', fontsize = 15)
+temp.set_xticklabels(rotation = 90, labels = best_bowling_data.index, fontsize = 10)
+plt.show()
+
+###### Yuzvendra Chahal has the best bowling figures in the dataset having achieved the best bowling statistics in 4 matches. 
