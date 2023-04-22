@@ -32,13 +32,6 @@ def nans(df):
 
 nulls = nans(df)
 
-# Create a function to check which rows have null values.
-
-def nans(df):
-    return df[df.isnull().any(axis = 1)]
-
-nulls = nans(df)
-
 nulls.head(5)
 
 ###### We see in index 4 that rating has a missing value, as 'votes', 'runtime' and 'gross' columns. We check the last five entries to see if this is a pattern, whereby a missing value in 'rating' column is associated with missing values in these columns. 
