@@ -157,9 +157,10 @@ df['analysis'] = df['polarity'].apply(getAnalysis)
 
 
 # compute the percentage of positve, negative and neutral tweets
-ptweets = round(df.analysis.str.count('Pos').sum()/df.shape[0]*100,1)
-ntweets = round(df.analysis.str.count('Neg').sum()/df.shape[0]*100,1)
-etweets = round(df.analysis.str.count('Neu').sum()/df.shape[0]*100,1)
+tweet_pcnt = round(df['analysis'].value_counts()/df.shape[0]*100,1)
+ntweets = tweet_pcnt[0] #ntweets = neutral tweets
+ptweets = tweet_pcnt[1] #ptweets = positive tweets
+etweets = tweet_pcnt[2] #etweets = negative tweets
 
 
 # Create bar graph to visualize the sentiments
