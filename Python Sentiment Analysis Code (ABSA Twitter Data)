@@ -1,5 +1,6 @@
-#Please note the code works only on jupyter on my pc and not on other environments
-#Import libraries
+# Analysis performed on jupyter notebook
+
+# Import libraries
 import re 
 import pandas as pd
 import matplotlib
@@ -11,7 +12,7 @@ import neattext as nt
 import neattext.functions as nfx
 import nltk
 from nltk.tokenize import word_tokenize
-nltk.download('wordnet') #if wordnet is not up to date
+nltk.download('wordnet')
 nltk.download('punkt')
 from nltk.stem import wordnet
 from nltk.corpus import wordnet
@@ -24,79 +25,48 @@ stopwords.words('english')
 import textblob
 from textblob import TextBlob
 import wordcloud
+from wordcloud import WordCloud
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-#Import the data set
+# Import the data set
 absa_tweets = pd.read_csv("C:/Users/Siya/Documents/Quant Internship/Case Studies/Absa Case Study/ABSA Data.csv", sep = "\n", encoding = 'ISO-8859-1', header=None)
 
 
-#Split and expand the dataframe
+# Split and expand the dataframe
 df = absa_tweets[0].str.split(',', expand=True)
 df.to_csv('Absa_twitter_data.csv', index=False, header=None)
 
 df = pd.read_csv('Absa_twitter_data.csv', low_memory=False)
 
 
-#Isolate fields that contain 'Absa' in the 'extract' column
+# Feature extraction
+# Isolate fields that contain 'Absa' and related terms in the 'extract' column
 df = df.dropna(subset=['extract'], how='any') #Remove rows with with NA in the extract collumn
-df = df[df['extract'].str.contains("ABSA|Absa|absa")]
+df = df[df['extract'].str.contains('ABSA|Absa|absa|cellphone banking|online banking|app|internet banking')]
 
+# Isolate 'id' and 'extract' columns
+df = df[['id', 'extract' ]]
 
-#Isolate id column and column with tweets
-df['tweets'] = df['extract'] #create new column:'tweets'
-df = df[['id', 'tweets' ]]
-
-
-#Remove duplicates
+# Data Cleaning
+# Remove duplicates and NaN values
 df = df.drop_duplicates(keep='first')
+df = df.dropna(subset=['extract'], how='any') 
 
 
-#Remove userhandles, place clean tweets in new column 'clean_tweet' and drop column that contains tweets and userhandles
-df['userhandles'] = df['tweets'].apply(nfx.extract_userhandles) #Extract userhandles
-df['clean_tweets'] = df['tweets'].apply(nfx.remove_userhandles)
-df.drop(['tweets'], axis='columns', inplace=True)
-
-
-#Remove hashtags
-df['clean_tweets'].apply(nfx.extract_hashtags).sum() #Confirm presence of hashtags
+# Isolate fields that contain 'Absa' in the 'extract' column
+df['clean_tweets'] = df['extract'].apply(nfx.remove_userhandles)
 df['clean_tweets'] = df['clean_tweets'].apply(nfx.remove_hashtags)
-
-
-#Remove RT
 df['clean_tweets'] = df['clean_tweets'].apply(lambda x: nfx.remove_custom_pattern(x, term_pattern = r'RT'))
-
-
-#Remove links
 df['clean_tweets'] = df['clean_tweets'].replace(to_replace=r'https?:\/\/.*[\r\n]*',value='',regex=True)
-
-
-#Remove punctuations and contractions
 df['clean_tweets'].apply(nfx.remove_puncts)
 df['clean_tweets'].apply(nfx.fix_contractions)
-df['id'] = df['id'].apply(str) #convert column 'id' to a string
-df['id'] = df['id'].apply(nfx.remove_puncts)
-
-
-#Remove special characters and numbers from tweets
 df['clean_tweets'] = df['clean_tweets'].apply(nfx.remove_special_characters)
 df['clean_tweets'] = df['clean_tweets'].apply(nfx.remove_numbers)
-
-#Remove 'userhandles' and 'id' columns
-df.drop(['userhandles', 'id'], axis='columns', inplace=True)
-
-
-#Remove duplicates from clean_tweets
-df.duplicated(subset = ['clean_tweets']).sum() #determine number of duplicated tweets
-df = df.drop_duplicates(keep='first')
-
-
-#Some fields in the 'clean_tweets' column are empty, others contain content relating to other banks, others Isolate fields that contain 'Absa' in the 'clean_tweets' column as 
-df = df[df['clean_tweets'].str.contains("ABSA|Absa|absa")]
-
-#Remove stopwords
 df['clean_tweets'] = df['clean_tweets'].apply(lambda x: nt.TextFrame(x).remove_stopwords())
+
+df.drop(['id', 'extract'], axis='columns', inplace=True)
 
 
 # POS tagger dictionary
@@ -110,7 +80,6 @@ def token_stop_pos(text):
     return newlist
 df['clean_tweets'] = df['clean_tweets'].apply(str)
 df['POS tagged'] = df['clean_tweets'].apply(token_stop_pos)
-df.head()
 
 
 def lemmatize(pos_data):
@@ -125,29 +94,43 @@ def lemmatize(pos_data):
     return lemma_rew
 
 df['lemma'] = df['POS tagged'].apply(lemmatize)
-df.head()
 
 
-#Common word visualization
-import wordcloud
+# Common word visualization
 all_words = ' '.join([tweets for tweets in df['clean_tweets']])
-from wordcloud import WordCloud
 wordcloud = WordCloud(width=800, height=500, random_state=21, max_font_size=110).generate(all_words)
-
 plt.figure(figsize=(10, 7))
 plt.imshow(wordcloud, interpolation="bilinear")
 plt.axis('off')
 plt.show()
 
 
-#Delete rows that contain words unrelated to Absa customer sentiment analysis based on above visualization
-df = df[~df.lemma.str.contains("Orland")]
-df = df[~df.lemma.str.contains("remier")]
-df = df[~df.lemma.str.contains("Chiefs")]
-#Run wordcloud plot again to confirm deletion of unrelated words
+# Delete rows that contain words unrelated to Absa customer sentiment analysis based on above visualization
+df = df[~df.lemma.str.contains('lockdown')]
+df = df[~df.lemma.str.contains('Premier|premier|Premiership|premier league|league champion')]
+df = df[~df.lemma.str.contains('Chiefs|Kaizer Chiefs|CHIEFS')]
+df = df[~df.lemma.str.contains('FNB|fnb|Fnb')]
+df = df[~df.lemma.str.contains('Capitec|capitec|CAPITEC')]
+df = df[~df.lemma.str.contains('Standard Bank|Standard BankZA|standard bank|standard bankZA')]
+df = df[~df.lemma.str.contains('Peter Mokaba|Mokaba Stadium')]
+df = df[~df.lemma.str.contains('Covid|COVID|covid|Flulike symtoms|symptoms|health department')]
+df = df[~df.lemma.str.contains('Cyrill Ramaphosa|CR Cyril|CYRIL')]
+df = df[~df.lemma.str.contains('Adv Mkhwebane')]
 
-#Sentiment analysis
-#Create functions to get subjectivity and polarity
+
+
+
+# Run wordcloud plot again to confirm deletion of unrelated words
+all_words = ' '.join([tweets for tweets in df['clean_tweets']])
+wordcloud = WordCloud(width=800, height=500, random_state=21, max_font_size=110).generate(all_words)
+plt.figure(figsize=(10, 7))
+plt.imshow(wordcloud, interpolation="bilinear")
+plt.axis('off')
+plt.show()
+
+
+# Sentiment analysis
+# Create functions to get subjectivity and polarity
 def getSubjectivity(text):
     return TextBlob(text).sentiment.subjectivity
 
@@ -155,13 +138,13 @@ def getPolarity(text):
     return TextBlob(text).sentiment.polarity
 
 
-#Create new subjectivyt and polarity columns
+# Create subjectivity and polarity columns
 df['subjectivity'] = df['clean_tweets'].apply(getSubjectivity)
 df['polarity'] = df['clean_tweets'].apply(getPolarity)
-df.head()
 
 
-#create fuction to compute the negative, neutral, and postive analysis
+#Seniment classification
+# create fuction to compute the negative, neutral, and postive analysis
 def getAnalysis(score):
     if score < 0:
         return 'Negative'
@@ -172,33 +155,17 @@ def getAnalysis(score):
         
 df['analysis'] = df['polarity'].apply(getAnalysis)
 
-df.head(60)
+
+# compute the percentage of positve, negative and neutral tweets
+ptweets = round(df.analysis.str.count('Pos').sum()/df.shape[0]*100,1)
+ntweets = round(df.analysis.str.count('Neg').sum()/df.shape[0]*100,1)
+etweets = round(df.analysis.str.count('Neu').sum()/df.shape[0]*100,1)
 
 
-#compute the percentage of positve
-ptweets = df.analysis.str.count('Pos').sum()/df.shape[0]*100
-round(ptweets, 1)
-
-
-#Compute percentage of negative 
-ntweets = df.analysis.str.count('Neg').sum()/df.shape[0]*100
-round(ntweets, 1)
-
-
-#Compute percentage of neutral tweets
-etweets = df.analysis.str.count('Neu').sum()/df.shape[0]*100
-round(etweets, 1)
-
-
-
-
-#Create bar graph to visualize the sentiments
-
-#show value counts
-df['analysis'].value_counts()
+# Create bar graph to visualize the sentiments
 
 #plot and visualize the counts
-plt.title('Absa Sentiment Analysis')
+plt.title('Absa Twitter Sentiment Analysis')
 plt.xlabel('Sentiment')
 plt.ylabel('Counts')
 df['analysis'].value_counts().plot(kind='bar')
@@ -210,8 +177,7 @@ labels = 'Postive', 'Negative', 'Neutral'
 sizes = [ptweets, ntweets, etweets]
 colors = ['yellowgreen', 'lightcoral', 'gold']
 
-
 plt.pie(sizes, labels = labels, explode=explode, colors=colors, autopct = '%1.1f%%', startangle = 120)
 plt.title('ABSA Twitter Sentiment Analysis')
 plt.axis('equal')
-
+plt.show()
