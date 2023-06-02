@@ -1,150 +1,192 @@
+# Performed on jupyter notebook.
+
 import pandas as pd
 import numpy as np
 import re
 
 data = pd.read_csv("C:/Users/Siya/Documents/Data Science/Projects/Projects completed/Python/Data Cleaning/movies.csv")
 df = data.copy()
-#df.head()
 
 df.shape
-
-# Check for duplicates.
-
-sum(df.duplicated())
-
-# Drop duplicates.
-
-df = df.drop_duplicates()
-df.shape
-
-###### 431 Rows were duplicates and deleted and now we're left with 9568 entries. 
-
-# Check for null values.
-
-for col in df.columns:
-    pct_missing = np.mean(df[col].isnull())
-    print('{} - {}%'.format(col, round(pct_missing*100)))
-    
-# Create a function to check which rows have null values.
-
-def nans(df):
-    return df[df.isnull().any(axis = 1)]
-
-nulls = nans(df)
-
-nulls.head(5)
-
-###### We see in index 4 that rating has a missing value, as 'votes', 'runtime' and 'gross' columns. We check the last five entries to see if this is a pattern, whereby a missing value in 'rating' column is associated with missing values in these columns. 
-
-nulls.tail()
-
-###### From the above output we see that there is a pattern with regards to missing values in that when a movie that has no rating more oftern than not has no votes, gross revenue or run time information. These features would important in creating a predictive model to determine the likelihood of getting a good rating for one's movie or predicting the gross revenue. However, since this project is solely for cleaning purposes, we will delete rows with missing values. 
-
-# Delete rows with missing values
-
-df = df.dropna()
 df.head()
 
 
-df.shape
+# Standardize column names such that they are all in small caps.
+df.columns = df.columns.str.strip().str.lower()
 
-# Standardize column names.
 
-df.columns =df.columns.str.strip().str.lower()
-df.rename(columns={'one-line': 'one_line'}, inplace = True)
+# Check for and drop duplicates.
+sum(df.duplicated())
+df = df.drop_duplicates()
 
-# Check the data types for the columns
 
+# Check for null values.
+df.isnull().sum()
+
+# Check what percentage of data per column is missing.
+for col in df.columns:
+    pct_missing = np.mean(df[col].isnull())
+    print('{} - {}%'.format(col, round(pct_missing*100,2)))
+
+# Take a closer look at missing values by defining a function to print only the rows with missing values.
+def nulls(x):
+    return df[x.isnull().any(axis = 1)]
+
+nulls(df).head()
+nulls(df).tail()
+    
+
+###### From index 4 it is seen that rating has a missing value, as does 'votes', 'runtime' and 'gross' columns. The last five entries show a pattern with regards to missing values in that when a movie
+###### has no rating more often than not it has no votes, gross revenue or run time information. These features would be important in creating a predictive model to determine the likelihood of getting  
+###### a good rating for one's movie or predicting the gross revenue. However, since this project is solely for cleaning purposes, we will delete rows with missing values.
+
+# Delete rows with missing values.
+df = df.dropna()
+
+
+# Check the data types for the columns.
 df.dtypes
 
-###### From the above output we see that the 'gross' and 'votes' columns have object data types. These need to be changed to 'float' and 'integer' data types, respectively. The 'year' column must be changed to 'date' data type. 
+# Create a function to convert the 'movies' and 'one-line' column data types to string.
+def change_column_type(df, column_names, data_type):
+    for column in column_names:
+        df[column] = df[column].astype(data_type)
 
-# Change 'votes' column data type to integer. 
+column_names = ['movies', 'one-line']
+data_type = 'string'
 
+change_column_type(df, column_names, data_type)
+
+
+# Remove braces from the 'year' column and split 'year' column into two columns.
+df['year'] = df['year'].str.replace('(', '').str.replace(')', '')
+df[['year', 'instalment']] = df['year'].str.split(' ', n=1, expand=True)
+
+# Convert None values in 'instalment' column to zeros.
+convert = lambda i : i or 0
+df['instalment'] = [convert(i) for i in df['instalment']]
+
+# The years of release are split between the 'year_start' column and the 'instalment' column so we need to place all of them in one column.
+# Create an empty list 'x' to house the years of release of the movies.
+x = [i if j == 0 else j for i, j in zip(df['year'], df['instalment'])]
+
+# Place the contents of the newly created list x into a pandas Series using the index the data frame df as year_series' index. 
+year_series = pd.Series(x[0:460], name = 'year_released', index = df.index.copy())
+
+# Concatenate the pandas Series y and the dataframe df.
+df = pd.concat([df, year_series.to_frame()], axis = 1)
+
+# Delete 'year', 'year_start' and 'instalment' columns.
+df.drop(columns = ['instalment'], inplace = True)
+
+
+# Change data type of 'year_released' column.
+df['year_released'] = df['year_released'].apply(np.int64)
+
+
+# Convert the 'votes' column data type to integer.
 df['votes'] = df['votes'].str.replace(',', '')
-df['votes'] = df['votes'].fillna(0)
 df['votes'] = df['votes'].apply(np.int64)
-df.dtypes
 
 
 # Change the 'gross' column data type to integer.
-
-# Check the 'gross' column to confirm that only the dollar is used as currency. 
-
+# Check the 'gross' column to confirm that only the dollar is used as currency.
 df['gross'].unique()
 
-# Change 'gross' column data type to float, remove the 'M' from each entry and change the 'gross' column name to 'gross_in_millions_of_$' to indicate currency and units of the gross. 
-
+# Remove the 'M' from each entry, change 'gross' column data type to float, and change the 'gross' column name to 'gross_in_millions_of_$' to indicate currency and units of the gross. 
 df['gross'] = df['gross'].str.replace('$', '').str.replace('M', '')
-df['gross'] = round(df['gross'].apply(np.float), 0)
-df['gross'] = df['gross'].fillna(0)
+df['gross'] = df['gross'].apply(np.float)
 df = df.rename(columns={'gross': 'gross_in_millions_of_$'})
 
-df.dtypes
 
-# Remove braces from the 'year' column and split 'year' column into two columns.
-
-df['year'] = df['year'].str.replace('(', '').str.replace(')', '')
-df[['year_start', 'installment']] = df['year'].str.split(' ', n=1, expand=True)
-
-# Convert None values in 'installment' column to zeros.
-
-convert = lambda i : i or 0
-df['installment'] = [convert(i) for i in df['installment']]
-df.head()
-
-# The years of release are in two columns, namely, 'year_released' and 'installment' so we need to place all of them in one column.
-
-x = list()
-for i,j in zip(df['year_start'], df['installment']):
-    if len(i) == 4:
-      x.append(i)
-    else: x.append(j)
-    
-y = pd.Series( x[0:460], name = 'year_released', index = df.index.copy())
-
-df = pd.concat([df, y.to_frame()], axis = 1)
-df.head()
-
-# Delete 'year', 'year_start' and 'installment' columns.
-
-df.drop(columns = ['year', 'year_start', 'installment'], inplace = True)
-
-df.dtypes
-
-# Convert remaining column datatypess from 'object' to 'string' and the 'year_released' column to integer data type.
-
-#df['movies'] = df['movies'].astype('string')
-df['movies'] = df['movies'].astype('string')
-df['genre'] = df['genre'].astype('string')
-df['one_line'] = df['one_line'].astype('string')
-df['stars'] = df['stars'].astype('string')
-df['year_released'] = df['year_released'].apply(np.int)
-df.dtypes
-
-# Check contents of the 'movies' column. 
-
+# Check and clean contents of the 'movies', 'genre' and 'stars' columns.
 df['movies'].unique()
+df['genre'].unique()
+df['stars'].unique()
 
-# Check content of 'genre' column. 
 
-df['genre']
+# Handle categorical data
 
-# Check entries in the 'stars' column. 
 
+# Take a look at the contents of the 'genre' column.
+df['genre'].head()
+df['genre'].unique()
+
+# The 'genre' column consists of up to three genres per movie, create columns to place each of the genres. 
+df['genre'] = df['genre'].str.replace('\n', '').str.strip()
+genres = df[['movies', 'genre']]
+
+# Create a new dataframe, new_genres, by spliting the 'genre' column such that each new column formed houses a spcific genre that the movie falls into. 
+genres[['genre1', 'genre2', 'genre3']] = genres['genre'].str.split(',', expand = True)
+genres = genres.drop(['movies','genre'], axis = 1)
+
+# Code categorical data using the fit_transform method.
+def encode_cat_col(dataframe, *column_names):
+    convert = lambda i: i or ''  # Convert cell with None type to empty cell
+
+    x = pd.DataFrame()  # Create an empty dataframe
+
+    for col in column_names:
+        dataframe[col] = [convert(i) for i in dataframe[col]]
+        x[col] = dataframe[col]  # Assign the column to the dataframe x
+
+    # Create a new dataframe using fit_transform on x columns
+    from sklearn.preprocessing import LabelEncoder
+    le = LabelEncoder()
+    encoded_cat_col_df = x.apply(le.fit_transform)
+
+    # Set the column names of the new dataframe as columns names of DatarFame x 
+    encoded_cat_col_df.columns = x.columns
+
+    return encoded_cat_col_df
+
+df_to_encode = genres  
+column_names = genres.columns  
+encoded_cat_col_df = encode_cat_col(df_to_encode, *column_names)  
+#print(encoded_cat_col_df)
+
+# Change column names to prevent column overlap when joining all the dataframes
+encoded_cat_col_df = encoded_cat_col_df.rename(columns = {'genre1': 'encoded_gen1', 'genre2': 'encoded_gen2', 'genre3': 'encoded_gen3'}) 
+
+# Concatenate the 'genres' and the dataframe with encoded genre data to dataframe df
+df = pd.concat([df, genres, encoded_cat_col_df], axis = 1)
+
+# Create dictionary to store the genre and the corresponding encoded genre data
+genres_dict = dict(zip(genres, encoded_cat_col_df))
+
+    
+# Take look at the contents of the 'stars' column. 
 df['stars']
-
-# Check contents of an individual 'stars' column entry
-
+df['stars'].unique()
 df['stars'][77]
 
-# Split the 'stars' column into 'director' and 'stars' column.
+###### The 'stars' column consists of the names of the starts as well as the director. Split these and place them
+###### in their respective columns
 
+# Clean the 'stars' columns
+df['stars'] = df['stars'].str.replace('Stars:', '').str.replace('Director:', '').str.replace('\n', '').str.strip()
+
+# Split the 'stars' column into 'director' and 'stars' column.
 df[['director', 'stars']] = df['stars'].str.split('|', n = 1, expand = True)
 
-# Remove 'Stars:' and 'Director:' from the 'stars' and 'director' columns. 
+# Create an empty dataframe to store the actor names.
+actors = pd.DataFrame()
+actors[['actor1', 'actor2', 'actor3', 'actor4']] = df['stars'].str.split(',', expand = True)
 
-df['stars'] = df['stars'].str.replace('Stars:', '')
-df['director'] = df['director'].str.replace('Director:', '')
+df_to_encode = actors  
+column_names = actors.columns  
+encoded_cat_col_df = encode_cat_col(df_to_encode, *column_names)  
+#print(encoded_cat_col_df)
+
+# Change column names to prevent column overlap when joining all the dataframes
+encoded_cat_col_df = encoded_cat_col_df.rename(columns = {'actor1': 'encoded_act1', 'actor2': 'encoded_act2', 'actor3': 'encoded_act3', 'actor4': 'encoded_act4'}) 
+
+# Join the 'actors' and the dataframe with encoded actor data to the original dataframe
+df = pd.concat([df, actors, encoded_cat_col_df], axis = 1)
+
+# Create dictionary to store the actor and the corresponding encoded data
+actors_dict = dict(zip(actors, encoded_cat_col_df))
 
 df.head()
+
+# Data cleaning complete
