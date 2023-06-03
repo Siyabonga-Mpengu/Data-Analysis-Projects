@@ -142,16 +142,16 @@ def encode_cat_col(dataframe, *column_names):
 
 df_to_encode = genres  
 column_names = genres.columns  
-encoded_cat_col_df = encode_cat_col(df_to_encode, *column_names)  
+encoded_cat_col_df1 = encode_cat_col(df_to_encode, *column_names)  
 
 # Change column names to prevent column overlap when joining all the dataframes
-encoded_cat_col_df = encoded_cat_col_df.rename(columns = {'genre1': 'encoded_gen1', 'genre2': 'encoded_gen2', 'genre3': 'encoded_gen3'}) 
+encoded_cat_col_df1 = encoded_cat_col_df1.rename(columns = {'genre1': 'encoded_gen1', 'genre2': 'encoded_gen2', 'genre3': 'encoded_gen3'}) 
 
 # Concatenate the 'genres' and the dataframe with encoded genre data to dataframe df
-df = pd.concat([df.drop(columns = 'genre'), genres.rename(columns = {'genre': 'genres'}), encoded_cat_col_df], axis = 1)
+df = pd.concat([df.drop(columns = 'genre'), genres.rename(columns = {'genre': 'genres'}), encoded_cat_col_df1], axis = 1)
 
 # Create dictionary to store the genre and the corresponding encoded genre data
-genres_dict = dict(zip(genres, encoded_cat_col_df))
+genres_dict = dict(zip(genres, encoded_cat_col_df1))
 
     
 # Take look at the contents of the 'stars' column. 
@@ -174,16 +174,16 @@ actors[['actor1', 'actor2', 'actor3', 'actor4']] = df['stars'].str.split(',', ex
 
 df_to_encode = actors  
 column_names = actors.columns  
-encoded_cat_col_df = encode_cat_col(df_to_encode, *column_names)  
+encoded_cat_col_df2 = encode_cat_col(df_to_encode, *column_names)  
 
 # Change column names to prevent column overlap when joining all the dataframes
-encoded_cat_col_df = encoded_cat_col_df.rename(columns = {'actor1': 'encoded_act1', 'actor2': 'encoded_act2', 'actor3': 'encoded_act3', 'actor4': 'encoded_act4'}) 
+encoded_cat_col_df2 = encoded_cat_col_df2.rename(columns = {'actor1': 'encoded_act1', 'actor2': 'encoded_act2', 'actor3': 'encoded_act3', 'actor4': 'encoded_act4'}) 
 
 # Join the 'actors' and the dataframe with encoded actor data to the original dataframe
-df = pd.concat([df.drop(columns = 'stars'), actors, encoded_cat_col_df], axis = 1)
+df = pd.concat([df.drop(columns = 'stars'), actors, encoded_cat_col_df2], axis = 1)
 
 # Create dictionary to store the actor and the corresponding encoded data
-actors_dict = dict(zip(actors, encoded_cat_col_df))
+actors_dict = dict(zip(actors, encoded_cat_col_df2))
 
 
 # Encode data in 'director' director column and concaate the encoded data to dataframe df. 
@@ -191,11 +191,12 @@ director_cat = pd.DataFrame()
 director_cat = df[['director']]
 df_to_encode = director_cat 
 column_names = director_cat.columns  
-encoded_cat_col_df = encode_cat_col(df_to_encode, *column_names)  
+encoded_cat_col_df3 = encode_cat_col(df_to_encode, *column_names)  
 
-df = pd.concat([df.drop(columns = 'director'), director_cat.rename(columns = {'director_cat': 'director'}), encoded_cat_col_df.rename(columns = {'director': 'encoded_dir'})], axis = 1)
+df = pd.concat([df.drop(columns = 'director'), director_cat.rename(columns = {'director_cat': 'director'}), encoded_cat_col_df3.rename(columns = {'director': 'encoded_dir'})], axis = 1)
 
-pd.set_option('display.max_columns', None)
+dir_dict = dict(zip(director_cat, encoded_cat_col_df3))
+
 df.head()
 
 # Data cleaning complete.
