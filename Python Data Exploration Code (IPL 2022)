@@ -2,6 +2,7 @@
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import datetime
 
 import matplotlib.pyplot as plt
 %matplotlib inline
@@ -10,23 +11,28 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Load the dataset and view top 5 entries
+data = pd.read_csv("C:/Users/Siya/Documents/Data Science/Projects/Python/IPL 2022/IPL 2022.csv")
+ipl = data.copy()
 
-ipl = pd.read_csv("C:/Users/Siya/Documents/Data Science/Projects/Python/IPL 2022/IPL 2022.csv")
+# Take general view of the data. 
+ipl.head()
+ipl.shape
+
+# Set 'match_id' column as index.
+ipl = ipl.set_index(['match_id'])
 
 # Select numeric columns
-
 ipl_numeric = ipl.select_dtypes(include=[np.number])
 numeric_cols = ipl_numeric.columns.values
-print(numeric_cols)
+print('The numeric columns in the dataset are: ', numeric_cols)
 
 # Select non-numeric columns
-
 ipl_non_numeric = ipl.select_dtypes(exclude=[np.number])
 non_numeric_cols = ipl_non_numeric.columns.values
-print(non_numeric_cols)
+print('The non_numeric cols are: ', non_numeric_cols)
+
 
 # Check for null values
-
 for col in ipl.columns:
     pct_missing = np.mean(ipl[col].isnull())
     print('{} - {}%'.format(col, round(pct_missing*100)))
@@ -35,7 +41,6 @@ for col in ipl.columns:
 ######  So, we check to see which matches don't have player of the match entries so that we can search for them online.
 
 # Create a function to select rows with null values.
-
 def nans(df):
     return df[df.isnull().any(axis = 1)]
 
@@ -44,18 +49,39 @@ nans(ipl)
 ###### Google search revealed that the player of the match in the match with match_id 46 was Ruturaj Gaikwad.
 
 # Update the dataframe to include Ruturaj Gaikwad as player of the match for the 46th match.
-
 ipl['player_of_the_match'].fillna('Ruturaj Gaikwad', inplace = True)
 
 # Confirm update successful.
-
 nans(ipl)
 
-# Check for outliers by looking at the max and min values for the numeric features.
+# Split the 'best_bowling_figure' column into two columns, one for the wickets and the other for runs in the innings and drop 'best_bowling_figures' column
+ipl[['best_bowling_figure_wckt','best_bowling_figure_runs']]= ipl['best_bowling_figure'].str.split('--', expand = True)
+ipl = ipl.drop(columns = ['best_bowling_figure'])
 
-ipl.describe()
+# Change new column datatype to int64
+ipl[['best_bowling_figure_wckt', 'best_bowling_figure_runs']] = ipl[['best_bowling_figure_wckt', 'best_bowling_figure_runs']].apply(pd.to_numeric)
+
+# Check datatypes of the columns
+ipl.dtypes
 
 # Exploratory data analysis
+
+# Get a statistical summary of the data
+ipl.describe()
+
+###### From the summary we see that the highest score run by a player is 116 and the highscore in a match is 222 for the first innings and 211 for the second innings. 
+
+# Check for any correlations in the data
+# plotting correlation heatmap
+ipl_htmap_plot = sns.heatmap(ipl.corr(), cmap="YlGnBu", annot=True)
+  
+# displaying heatmap
+plt.show()
+
+###### From the heatmap we can see that there is strong positive correlation between first innings score and the second innings score. Which is to be expected because 
+###### in the second the batting is working hard to reach and exceed the the number of runs from the first innings. We also see a negative correlation between the first 
+###### innings wickets  and the first innings socre as one would expect. Interestingly though, there is a weak positive correlation between the second innings wickets and the secodn innings score. 
+
 
 # How many matches did each team win?
 
@@ -120,13 +146,13 @@ plt.show()
 ###### The plot shows that 93% of captains chose to field first after winning the toss. These captains made well informed 
 ###### choices given the outcomes of the 'Number of matches won by chasing or defending' chart. 
 
-# In how many matches were the top scorers declared top scorers?
+# In how many matches was each top scorer named top scorer?
 
 sns.set_style('darkgrid')
 top_scorer_data = ipl['top_scorer'].value_counts().sort_values(ascending = False)
 plt.figure(figsize = (15,8))
 temp = sns.barplot(top_scorer_data.index, top_scorer_data.values, alpha = 0.8)
-plt.title('Top scorers in the IPL 2022')
+plt.title('Number of top scorer achievement IPL 2022')
 plt.ylabel('Count', fontsize = 14)
 plt.xlabel('Player name', fontsize = 15)
 temp.set_xticklabels(rotation = 90, labels = top_scorer_data.index, fontsize = 10)
