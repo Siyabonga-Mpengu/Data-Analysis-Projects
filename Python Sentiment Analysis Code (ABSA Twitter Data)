@@ -48,13 +48,13 @@ df = data.copy()
 df = df[df['extract'].str.contains('ABSA|Absa|absa|cellphone banking|online banking|app|internet banking')]
 
 # Isolate 'id' and 'extract' columns
-df = df[['id', 'extract' ]]
+df = df[['extract']]
 
 
 # Data Cleaning
 # Remove duplicates and NaN values
 df = df.drop_duplicates(keep='first')
-df = df.dropna(subset=['extract'], how='any') 
+df = df.dropna() 
 
 
 # Isolate fields that contain 'Absa' in the 'extract' column
@@ -68,7 +68,7 @@ df['clean_tweets'] = df['clean_tweets'].apply(nfx.remove_special_characters)
 df['clean_tweets'] = df['clean_tweets'].apply(nfx.remove_numbers)
 df['clean_tweets'] = df['clean_tweets'].apply(lambda x: nt.TextFrame(x).remove_stopwords())
 
-df.drop(['id', 'extract'], axis='columns', inplace=True)
+df.drop(['extract'], axis='columns', inplace=True)
 
 
 # POS tagger dictionary
@@ -102,6 +102,7 @@ df['lemma'] = df['POS tagged'].apply(lemmatize)
 all_words = ' '.join([tweets for tweets in df['clean_tweets']])
 wordcloud = WordCloud(width=800, height=500, random_state=21, max_font_size=110).generate(all_words)
 plt.figure(figsize=(10, 7))
+plt.title('All Tweets (First Cloud)')
 plt.imshow(wordcloud, interpolation="bilinear")
 plt.axis('off')
 plt.show()
@@ -126,12 +127,14 @@ df = df[~df.lemma.str.contains('Jele Itumeleng')]
 all_words = ' '.join([tweets for tweets in df['clean_tweets']])
 wordcloud = WordCloud(width=800, height=500, random_state=21, max_font_size=110).generate(all_words)
 plt.figure(figsize=(10, 7))
+plt.title('All Tweets (Second Cloud)')
 plt.imshow(wordcloud, interpolation="bilinear")
 plt.axis('off')
 plt.show()
 
 
 # Sentiment analysis
+
 # Create functions to get subjectivity and polarity
 def getSubjectivity(text):
     return TextBlob(text).sentiment.subjectivity
@@ -145,8 +148,7 @@ df['subjectivity'] = df['clean_tweets'].apply(getSubjectivity)
 df['polarity'] = df['clean_tweets'].apply(getPolarity)
 
 
-#Seniment classification
-# create fuction to compute the negative, neutral, and postive analysis
+# Create fuction to compute the negative, neutral, and postive analysis
 def getAnalysis(score):
     if score < 0:
         return 'Negative'
@@ -167,14 +169,14 @@ etweets = tweet_pcnt[2] #etweets = negative tweets
 
 # Create bar graph to visualize the sentiments
 
-#plot and visualize the counts
+# Plot and visualize the counts
 plt.title('Absa Twitter Sentiment Analysis')
 plt.xlabel('Sentiment')
 plt.ylabel('Counts')
 df['analysis'].value_counts().plot(kind='bar')
 plt.show()
 
-#Create pie chart
+# Create pie chart
 explode = (0.1,0.1,0.1)
 labels = 'Postive', 'Negative', 'Neutral'
 sizes = [ptweets, ntweets, etweets]
@@ -183,4 +185,13 @@ colors = ['yellowgreen', 'lightcoral', 'gold']
 plt.pie(sizes, labels = labels, explode=explode, colors=colors, autopct = '%1.1f%%', startangle = 120)
 plt.title('ABSA Twitter Sentiment Analysis')
 plt.axis('equal')
+plt.show()
+
+# Create word cloud to visualize words used in negative tweets
+data_neg = " ".join(df[df['analysis'] =='Negative']['lemma'])
+wordcloud = WordCloud(width=800, height=500, random_state=21, max_font_size=110).generate(data_neg)
+plt.figure(figsize = (10,7))
+plt.title('Negative Tweets')
+plt.imshow(wordcloud, interpolation = 'bilinear')
+plt.axis('off')
 plt.show()
