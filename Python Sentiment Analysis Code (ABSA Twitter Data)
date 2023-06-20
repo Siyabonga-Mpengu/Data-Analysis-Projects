@@ -187,7 +187,7 @@ labels = 'Postive', 'Neutral', 'Negative'
 sizes = [ptweets, ntweets, etweets]
 colors = ['yellowgreen', 'lightcoral', 'gold']
 
-plt.pie(sizes, labels = labels, explode=explode, colors=colors, autopct = '%1.1f%%', startangle = 120)
+plt.pie(sizes, labels = labels, explode=explode, colors=colors, autopct = '%1.1f%%', startangle = 360)
 plt.title('ABSA Twitter Sentiment Analysis')
 plt.axis('equal')
 plt.show()
