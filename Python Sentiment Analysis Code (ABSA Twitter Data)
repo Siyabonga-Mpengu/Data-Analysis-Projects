@@ -43,11 +43,13 @@ df = pd.read_csv('Absa_twitter_data.csv', low_memory=False)
 
 # Feature extraction
 # Isolate fields that contain 'Absa' and related terms in the 'extract' column
-df = df.dropna(subset=['extract'], how='any') #Remove rows with with NA in the extract collumn
+data = df.dropna(subset=['extract'], how='any') #Remove rows with with NA in the extract collumn
+df = data.copy()
 df = df[df['extract'].str.contains('ABSA|Absa|absa|cellphone banking|online banking|app|internet banking')]
 
 # Isolate 'id' and 'extract' columns
 df = df[['id', 'extract' ]]
+
 
 # Data Cleaning
 # Remove duplicates and NaN values
@@ -109,6 +111,7 @@ plt.show()
 df = df[~df.lemma.str.contains('lockdown')]
 df = df[~df.lemma.str.contains('Premier|premier|Premiership|premier league|league champion')]
 df = df[~df.lemma.str.contains('Chiefs|Kaizer Chiefs|CHIEFS')]
+df = df[~df.lemma.str.contains('Orlando Pirates')]
 df = df[~df.lemma.str.contains('FNB|fnb|Fnb')]
 df = df[~df.lemma.str.contains('Capitec|capitec|CAPITEC')]
 df = df[~df.lemma.str.contains('Standard Bank|Standard BankZA|standard bank|standard bankZA')]
@@ -116,9 +119,8 @@ df = df[~df.lemma.str.contains('Peter Mokaba|Mokaba Stadium')]
 df = df[~df.lemma.str.contains('Covid|COVID|covid|Flulike symtoms|symptoms|health department')]
 df = df[~df.lemma.str.contains('Cyrill Ramaphosa|CR Cyril|CYRIL')]
 df = df[~df.lemma.str.contains('Adv Mkhwebane')]
-
-
-
+df = df[~df.lemma.str.contains('South Africa')]
+df = df[~df.lemma.str.contains('Jele Itumeleng')]
 
 # Run wordcloud plot again to confirm deletion of unrelated words
 all_words = ' '.join([tweets for tweets in df['clean_tweets']])
@@ -173,7 +175,7 @@ df['analysis'].value_counts().plot(kind='bar')
 plt.show()
 
 #Create pie chart
-explode = (0,0.1,0)
+explode = (0.1,0.1,0.1)
 labels = 'Postive', 'Negative', 'Neutral'
 sizes = [ptweets, ntweets, etweets]
 colors = ['yellowgreen', 'lightcoral', 'gold']
