@@ -168,17 +168,22 @@ etweets = tweet_pcnt[2] #etweets = negative tweets
 
 
 # Create bar graph to visualize the sentiments
-
-# Plot and visualize the counts
 plt.title('Absa Twitter Sentiment Analysis')
 plt.xlabel('Sentiment')
 plt.ylabel('Counts')
-df['analysis'].value_counts().plot(kind='bar')
+
+# Create the bar plot
+ax = df['analysis'].value_counts().plot(kind='bar')
+
+# Add labels to each bar
+for p in ax.patches:
+    ax.annotate(str(p.get_height()), (p.get_x() + p.get_width()/2, p.get_height()), ha = 'center')
+
 plt.show()
 
 # Create pie chart
 explode = (0.1,0.1,0.1)
-labels = 'Postive', 'Negative', 'Neutral'
+labels = 'Postive', 'Neutral', 'Negative'
 sizes = [ptweets, ntweets, etweets]
 colors = ['yellowgreen', 'lightcoral', 'gold']
 
